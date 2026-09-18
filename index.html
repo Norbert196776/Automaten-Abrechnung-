@@ -1,6 +1,87 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Abrechnung V7</title><style>body{font-family:-apple-system,sans-serif;background:#f2f2f7;margin:0;padding:16px}main{max-width:650px;margin:auto}.c{background:#fff;padding:16px;border-radius:16px;margin:12px 0}input{box-sizing:border-box;width:100%;font-size:20px;padding:14px;margin:5px 0 12px;border-radius:10px;border:1px solid #bbb}.r{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eee}.big{font-size:21px;font-weight:bold}label{color:#555}h1{margin-bottom:4px}.note{color:#666}</style></head><body><main><h1>Automaten-Abrechnung</h1><p class="note">Version 7 · automatische Berechnung</p><div class="c"><label>Kasseninhalt €</label><input id="k" inputmode="decimal" placeholder="1000,00"><label>Abzug €</label><input id="a" inputmode="decimal" placeholder="100,00"><label>Gebühren €</label><input id="g" inputmode="decimal" placeholder="0,00"><label>Vergnügungssteuer €</label><input id="v" inputmode="decimal" placeholder="0,00"><label>Provision %</label><input id="p" inputmode="decimal" placeholder="z. B. 40"></div><div class="c"><div class="r"><span>Kasseninhalt</span><b id="rk">0,00 €</b></div><div class="r"><span>− Abzug</span><b id="ra">0,00 €</b></div><div class="r big"><span>Verbleib</span><b id="rv">0,00 €</b></div><div class="r"><span>− Gebühren</span><b id="rg">0,00 €</b></div><div class="r"><span>− Vergnügungssteuer</span><b id="rvs">0,00 €</b></div><div class="r big"><span>Bemessungsbetrag</span><b id="rb">0,00 €</b></div><div class="r"><span>Provision</span><b id="rp">0,00 €</b></div><div class="r"><span>Netto aus Verbleib</span><b id="rn">0,00 €</b></div><div class="r"><span>MwSt. 19 %</span><b id="rm">0,00 €</b></div></div><script>
-function n(id){var s=document.getElementById(id).value||"";s=s.replace(/\s/g,"").replace(/€/g,"");if(s.indexOf(",")>=0)s=s.replace(/\./g,"").replace(",",".");return parseFloat(s)||0}
-function e(x){return x.toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})+" €"}
-function C(){var K=n("k"),A=n("a"),G=n("g"),V=n("v"),P=n("p"),R=K-A,B=R-G-V,PR=B*P/100,N=R/1.19,M=R-N;document.getElementById("rk").textContent=e(K);document.getElementById("ra").textContent=e(A);document.getElementById("rv").textContent=e(R);document.getElementById("rg").textContent=e(G);document.getElementById("rvs").textContent=e(V);document.getElementById("rb").textContent=e(B);document.getElementById("rp").textContent=e(PR);document.getElementById("rn").textContent=e(N);document.getElementById("rm").textContent=e(M)}
-["k","a","g","v","p"].forEach(function(id){document.getElementById(id).addEventListener("input",C);document.getElementById(id).addEventListener("change",C);document.getElementById(id).addEventListener("keyup",C)});C();
-</script></main></body></html>
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Abrechnung V8</title>
+  <style>
+    body{font-family:-apple-system,sans-serif;background:#f2f2f7;margin:0;padding:16px}
+    main{max-width:650px;margin:auto}
+    .c{background:#fff;padding:16px;border-radius:16px;margin:12px 0}
+    input{box-sizing:border-box;width:100%;font-size:20px;padding:14px;margin:5px 0 12px;border-radius:10px;border:1px solid #bbb}
+    .r{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eee}
+    .big{font-size:21px;font-weight:bold}
+    label{color:#555}
+    h1{margin-bottom:4px}
+    .note{color:#666}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Automaten-Abrechnung</h1>
+  <p class="note">Version 8 · automatische Berechnung · Rundung auf 10 Cent</p>
+
+  <div class="c">
+    <label>Kasseninhalt €</label>
+    <input id="k" inputmode="decimal" placeholder="1000,00">
+    <label>Abzug €</label>
+    <input id="a" inputmode="decimal" placeholder="100,00">
+    <label>Gebühren €</label>
+    <input id="g" inputmode="decimal" placeholder="0,00">
+    <label>Vergnügungssteuer €</label>
+    <input id="v" inputmode="decimal" placeholder="0,00">
+    <label>Provision %</label>
+    <input id="p" inputmode="decimal" placeholder="z. B. 40">
+  </div>
+
+  <div class="c">
+    <div class="r"><span>Kasseninhalt</span><b id="rk">0,00 €</b></div>
+    <div class="r"><span>− Abzug</span><b id="ra">0,00 €</b></div>
+    <div class="r big"><span>Verbleib</span><b id="rv">0,00 €</b></div>
+    <div class="r"><span>− Gebühren</span><b id="rg">0,00 €</b></div>
+    <div class="r"><span>− Vergnügungssteuer</span><b id="rvs">0,00 €</b></div>
+    <div class="r big"><span>Bemessungsbetrag</span><b id="rb">0,00 €</b></div>
+    <div class="r"><span>Provision</span><b id="rp">0,00 €</b></div>
+    <div class="r"><span>Netto aus Verbleib</span><b id="rn">0,00 €</b></div>
+    <div class="r"><span>MwSt. 19 %</span><b id="rm">0,00 €</b></div>
+  </div>
+
+  <script>
+    function n(id){
+      var s=document.getElementById(id).value||"";
+      s=s.replace(/\s/g,"").replace(/€/g,"");
+      if(s.indexOf(",")>=0)s=s.replace(/\./g,"").replace(",",".");
+      return parseFloat(s)||0;
+    }
+
+    function e(x){
+      x=Math.round((x+Number.EPSILON)*10)/10;
+      return x.toLocaleString("de-DE",{
+        minimumFractionDigits:2,
+        maximumFractionDigits:2
+      })+" €";
+    }
+
+    function C(){
+      var K=n("k"),A=n("a"),G=n("g"),V=n("v"),P=n("p"),R=K-A,B=R-G-V,PR=B*P/100,N=R/1.19,M=R-N;
+      document.getElementById("rk").textContent=e(K);
+      document.getElementById("ra").textContent=e(A);
+      document.getElementById("rv").textContent=e(R);
+      document.getElementById("rg").textContent=e(G);
+      document.getElementById("rvs").textContent=e(V);
+      document.getElementById("rb").textContent=e(B);
+      document.getElementById("rp").textContent=e(PR);
+      document.getElementById("rn").textContent=e(N);
+      document.getElementById("rm").textContent=e(M);
+    }
+
+    ["k","a","g","v","p"].forEach(function(id){
+      document.getElementById(id).addEventListener("input",C);
+      document.getElementById(id).addEventListener("change",C);
+      document.getElementById(id).addEventListener("keyup",C);
+    });
+    C();
+  </script>
+</main>
+</body>
+</html>
