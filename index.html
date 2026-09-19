@@ -41,14 +41,14 @@
     .print-only{display:none}
     @media(max-width:620px){body{padding:12px}.grid{grid-template-columns:1fr}.span2{grid-column:auto}.actions{grid-template-columns:1fr}.card{padding:14px}h1{font-size:28px}}
     @media print{
-      @page{size:A4 landscape;margin:10mm}
-      body{background:#fff;padding:0;font-size:10pt}
+      @page{size:A4 portrait;margin:9mm}
+      body{background:#fff;padding:0;font-size:9.5pt}
       main{max-width:none}
       .screen-only,.screen-view,.actions,.saved{display:none!important}
       .print-only{display:block}
       .card{box-shadow:none;border:0;border-radius:0;margin:0;padding:0;break-inside:avoid}
       .device-card{display:none}
-      .print-form{font-size:9pt;color:#000}
+      .print-form{font-size:8.8pt;color:#000;width:100%}
       .print-title{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #000;padding-bottom:5px;margin-bottom:6px}
       .print-title h1{font-size:19pt;margin:0}
       .print-number{font-size:13pt;font-weight:800;border:1px solid #000;padding:4px 10px;min-width:125px;text-align:center}
@@ -58,10 +58,19 @@
       .print-field b{font-weight:600}
       .print-mode{font-weight:800;margin:5px 0}
       .print-table{width:100%;border-collapse:collapse;table-layout:fixed}
-      .print-table th,.print-table td{border:1px solid #222;padding:4px 3px;text-align:right;vertical-align:middle}
-      .print-table th{background:#e7e7e7;text-align:center;font-size:8pt;line-height:1.15}
-      .print-table th:first-child,.print-table td:first-child{text-align:left;width:16%}
-      .print-table th:last-child,.print-table td:last-child{width:10%}
+      .print-table th,.print-table td{border:1px solid #222;padding:4px 2px;text-align:right;vertical-align:middle}
+      .print-table th{background:#e7e7e7;text-align:center;font-size:6.8pt;line-height:1.12;overflow-wrap:anywhere;hyphens:auto}
+      .print-table td{font-size:7.3pt;white-space:nowrap}
+      .print-table th:nth-child(1),.print-table td:nth-child(1){width:14%;text-align:left;white-space:normal}
+      .print-table th:nth-child(2),.print-table td:nth-child(2){width:10%}
+      .print-table th:nth-child(3),.print-table td:nth-child(3){width:10%}
+      .print-table th:nth-child(4),.print-table td:nth-child(4){width:9%}
+      .print-table th:nth-child(5),.print-table td:nth-child(5){width:10%}
+      .print-table th:nth-child(6),.print-table td:nth-child(6){width:8%}
+      .print-table th:nth-child(7),.print-table td:nth-child(7){width:12%}
+      .print-table th:nth-child(8),.print-table td:nth-child(8){width:5%}
+      .print-table th:nth-child(9),.print-table td:nth-child(9){width:12%}
+      .print-table th:nth-child(10),.print-table td:nth-child(10){width:10%;white-space:normal}
       .print-table .sum-row td{font-weight:800;border-top:2px solid #000}
       .print-bottom{display:grid;grid-template-columns:1.35fr .65fr;gap:14px;margin-top:8px}
       .print-totals{border:1px solid #222}
