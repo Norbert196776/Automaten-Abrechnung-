@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#1769aa">
+  <title>Automaten-Abrechnung V9</title>
+  <style>
+    :root{--blue:#1769aa;--blue2:#e9f3fb;--bg:#f2f2f7;--card:#fff;--line:#d7d7dc;--text:#1c1c1e;--muted:#666;--danger:#b42318}
+    *{box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);margin:0;padding:16px;padding-bottom:40px}
+    main{max-width:860px;margin:auto}
+    h1{font-size:30px;margin:4px 0}
+    h2{font-size:21px;margin:0 0 14px}
+    .note{color:var(--muted);margin:0 0 14px}
+    .card{background:var(--card);padding:16px;border-radius:16px;margin:12px 0;box-shadow:0 1px 2px #0000000a}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .span2{grid-column:1/-1}
+    label{display:block;color:#555;font-size:15px;margin-bottom:5px}
+    input{width:100%;font:inherit;font-size:18px;padding:12px;border-radius:10px;border:1px solid #b8b8bd;background:#fff;color:#111}
+    input:focus{outline:3px solid #1769aa35;border-color:var(--blue)}
+    .mode{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#e5e5ea;padding:5px;border-radius:12px}
+    .mode input{position:absolute;opacity:0;pointer-events:none}
+    .mode label{margin:0;text-align:center;padding:11px 8px;border-radius:9px;font-weight:700;color:#444;cursor:pointer}
+    .mode input:checked+label{background:#fff;color:var(--blue);box-shadow:0 1px 4px #0002}
+    .device-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .badge{background:var(--blue2);color:var(--blue);font-weight:700;border-radius:999px;padding:5px 10px}
+    .results{margin-top:14px;border-top:1px solid var(--line);padding-top:8px}
+    .row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #eee}
+    .row:last-child{border-bottom:0}
+    .row b{text-align:right;white-space:nowrap}
+    .strong{font-size:18px;font-weight:800}
+    .summary .row{font-size:17px}
+    .summary .total{font-size:21px;color:var(--blue);padding-top:13px}
+    .actions{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px}
+    button{border:0;border-radius:11px;padding:13px 10px;font:inherit;font-weight:700;cursor:pointer}
+    .primary{background:var(--blue);color:#fff}
+    .secondary{background:#e5e5ea;color:#111}
+    .danger{background:#feeceb;color:var(--danger)}
+    .saved{min-height:22px;color:#287a3f;text-align:center;margin:10px 0 0;font-weight:600}
+    .print-only{display:none}
+    @media(max-width:620px){body{padding:12px}.grid{grid-template-columns:1fr}.span2{grid-column:auto}.actions{grid-template-columns:1fr}.card{padding:14px}h1{font-size:28px}}
+    @media print{
+      @page{size:A4 landscape;margin:10mm}
+      body{background:#fff;padding:0;font-size:10pt}
+      main{max-width:none}
+      .screen-only,.actions,.saved{display:none!important}
+      .print-only{display:block}
+      .card{box-shadow:none;border:1px solid #777;border-radius:0;margin:6px 0;padding:8px;break-inside:avoid}
+      h1{font-size:20pt}
+      h2{font-size:13pt;margin-bottom:6px}
+      input{border:0;padding:0;font-size:10pt}
+      .device-card{display:none}
+      .print-table{width:100%;border-collapse:collapse;margin-top:8px}
+      .print-table th,.print-table td{border:1px solid #444;padding:5px;text-align:right}
+      .print-table th:first-child,.print-table td:first-child{text-align:left}
+      .print-table th{background:#eee}
+      .summary{display:grid;grid-template-columns:1fr 1fr;gap:0 22px}
+      .summary h2{grid-column:1/-1}
+      .summary .total{grid-column:1/-1}
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Automaten-Abrechnung</h1>
+    <p class="note">Version 9 · vier Automaten · Rundung auf 10 Cent</p>
+  </header>
+
+  <section class="card">
+    <h2>Abrechnungsart</h2>
+    <div class="mode">
+      <input type="radio" name="mode" id="inclusive" value="inclusive" checked>
+      <label for="inclusive">Inklusive MwSt.</label>
+      <input type="radio" name="mode" id="exclusive" value="exclusive">
+      <label for="exclusive">Exklusive MwSt.</label>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Kopfdaten</h2>
+    <div class="grid">
+      <div><label for="number">Abrechnung Nr.</label><input id="number" autocomplete="off"></div>
+      <div><label for="date">Heutiges Datum</label><input id="date" type="date"></div>
+      <div><label for="customer">Wirt / Kunde</label><input id="customer" autocomplete="organization"></div>
+      <div><label for="lastDate">Letzte Abrechnung</label><input id="lastDate" type="date"></div>
+      <div class="span2"><label for="street">Straße</label><input id="street" autocomplete="street-address"></div>
+      <div><label for="zip">PLZ</label><input id="zip" inputmode="numeric" autocomplete="postal-code"></div>
+      <div><label for="city">Ort</label><input id="city" autocomplete="address-level2"></div>
+      <div><label for="customerTax">Steuer-/USt-ID Wirt/Kunde</label><input id="customerTax" autocomplete="off"></div>
+      <div><label for="operatorTax">Steuer-/USt-ID Aufsteller</label><input id="operatorTax" autocomplete="off"></div>
+    </div>
+  </section>
+
+  <div id="devices"></div>
+
+  <section class="card print-only">
+    <h2>Geräteabrechnung</h2>
+    <table class="print-table">
+      <thead><tr><th>Gerät / Nr.</th><th>Kasseninhalt</th><th>MwSt. Spieler</th><th>Netto</th><th>Vergnügungsst.</th><th>Gebühren</th><th>Verbleib</th><th>%</th><th>Anteil Wirt</th></tr></thead>
+      <tbody id="printRows"></tbody>
+    </table>
+  </section>
+
+  <section class="card summary">
+    <h2>Gesamtabrechnung</h2>
+    <div class="row"><span>Kasseninhalt gesamt</span><b id="tCash">0,00 €</b></div>
+    <div class="row"><span>MwSt. vom Spieler bezahlt</span><b id="tPlayerVat">0,00 €</b></div>
+    <div class="row"><span>Netto</span><b id="tNet">0,00 €</b></div>
+    <div class="row"><span>− Vergnügungssteuer</span><b id="tTax">0,00 €</b></div>
+    <div class="row"><span>− Gebühren</span><b id="tFees">0,00 €</b></div>
+    <div class="row strong"><span>Verbleibt zur Abrechnung</span><b id="tRemaining">0,00 €</b></div>
+    <div class="row"><span>Anteil des Wirtes</span><b id="tShare">0,00 €</b></div>
+    <div class="row"><span id="vatLabel">Enthaltene MwSt. im Wirtsanteil</span><b id="tHostVat">0,00 €</b></div>
+    <div class="row total"><span>Auszahlung</span><b id="tPayout">0,00 €</b></div>
+  </section>
+
+  <section class="card screen-only">
+    <div class="actions">
+      <button type="button" class="primary" id="saveBtn">Abrechnung speichern</button>
+      <button type="button" class="secondary" id="printBtn">Drucken / PDF</button>
+      <button type="button" class="danger" id="newBtn">Neue Abrechnung</button>
+    </div>
+    <p class="saved" id="savedMessage"></p>
+  </section>
+</main>
+
+<script>
+  const DEVICE_COUNT=4;
+  const moneyFormatter=new Intl.NumberFormat("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const deviceContainer=document.getElementById("devices");
+
+  function deviceTemplate(i){
+    return `<section class="card device-card" data-device="${i}">
+      <div class="device-head"><h2>Automat ${i+1}</h2><span class="badge">Gerät ${i+1}</span></div>
+      <div class="grid">
+        <div><label for="name${i}">Geldspielgerät / Bezeichnung</label><input id="name${i}" autocomplete="off"></div>
+        <div><label for="serial${i}">Geräte-Nr.</label><input id="serial${i}" autocomplete="off"></div>
+        <div><label for="cash${i}">Kasseninhalt €</label><input id="cash${i}" inputmode="decimal" placeholder="0,00"></div>
+        <div><label for="tax${i}">Vergnügungssteuer €</label><input id="tax${i}" inputmode="decimal" placeholder="0,00"></div>
+        <div><label for="fees${i}">Gebühren €</label><input id="fees${i}" inputmode="decimal" placeholder="0,00"></div>
+        <div><label for="percent${i}">Anteil des Wirtes %</label><input id="percent${i}" inputmode="decimal" placeholder="z. B. 50"></div>
+      </div>
+      <div class="results">
+        <div class="row"><span>MwSt. vom Spieler bezahlt</span><b id="playerVat${i}">0,00 €</b></div>
+        <div class="row"><span>Netto</span><b id="net${i}">0,00 €</b></div>
+        <div class="row"><span>Verbleibt zur Abrechnung</span><b id="remaining${i}">0,00 €</b></div>
+        <div class="row strong"><span>Anteil des Wirtes</span><b id="share${i}">0,00 €</b></div>
+      </div>
+    </section>`;
+  }
+
+  for(let i=0;i<DEVICE_COUNT;i++)deviceContainer.insertAdjacentHTML("beforeend",deviceTemplate(i));
+
+  function parseNumber(value){
+    let s=String(value||"").replace(/\s/g,"").replace(/€/g,"");
+    if(s.includes(","))s=s.replace(/\./g,"").replace(",",".");
+    const n=Number.parseFloat(s);
+    return Number.isFinite(n)?n:0;
+  }
+
+  function read(id){return parseNumber(document.getElementById(id).value)}
+  function round10(n){return Math.round((n+Number.EPSILON)*10)/10}
+  function money(n){return moneyFormatter.format(round10(n))+" €"}
+  function safe(n){return Math.max(0,round10(n))}
+  function selectedMode(){return document.querySelector('input[name="mode"]:checked').value}
+
+  function calculateDevice(i){
+    const cash=round10(read(`cash${i}`));
+    const tax=round10(read(`tax${i}`));
+    const fees=round10(read(`fees${i}`));
+    const percent=read(`percent${i}`);
+    const net=round10(cash/1.19);
+    const playerVat=round10(cash-net);
+    const remaining=safe(net-tax-fees);
+    const share=round10(remaining*percent/100);
+    const hostVat=selectedMode()==="inclusive"?round10(share-share/1.19):round10(share*0.19);
+    const payout=selectedMode()==="inclusive"?share:round10(share+hostVat);
+
+    document.getElementById(`playerVat${i}`).textContent=money(playerVat);
+    document.getElementById(`net${i}`).textContent=money(net);
+    document.getElementById(`remaining${i}`).textContent=money(remaining);
+    document.getElementById(`share${i}`).textContent=money(share);
+    return {cash,tax,fees,percent,net,playerVat,remaining,share,hostVat,payout};
+  }
+
+  function calculate(){
+    const rows=[];
+    const totals={cash:0,tax:0,fees:0,net:0,playerVat:0,remaining:0,share:0,hostVat:0,payout:0};
+    for(let i=0;i<DEVICE_COUNT;i++){
+      const r=calculateDevice(i);rows.push(r);
+      for(const key of Object.keys(totals))totals[key]=round10(totals[key]+r[key]);
+    }
+    document.getElementById("tCash").textContent=money(totals.cash);
+    document.getElementById("tPlayerVat").textContent=money(totals.playerVat);
+    document.getElementById("tNet").textContent=money(totals.net);
+    document.getElementById("tTax").textContent=money(totals.tax);
+    document.getElementById("tFees").textContent=money(totals.fees);
+    document.getElementById("tRemaining").textContent=money(totals.remaining);
+    document.getElementById("tShare").textContent=money(totals.share);
+    document.getElementById("tHostVat").textContent=money(totals.hostVat);
+    document.getElementById("tPayout").textContent=money(totals.payout);
+    document.getElementById("vatLabel").textContent=selectedMode()==="inclusive"?"Enthaltene MwSt. im Wirtsanteil":"Zuzüglich 19 % MwSt. auf Wirtsanteil";
+    updatePrintRows(rows);
+  }
+
+  function updatePrintRows(rows){
+    document.getElementById("printRows").innerHTML=rows.map((r,i)=>{
+      const name=document.getElementById(`name${i}`).value.trim()||`Automat ${i+1}`;
+      const serial=document.getElementById(`serial${i}`).value.trim();
+      return `<tr><td>${escapeHtml(name)}${serial?` / ${escapeHtml(serial)}`:""}</td><td>${money(r.cash)}</td><td>${money(r.playerVat)}</td><td>${money(r.net)}</td><td>${money(r.tax)}</td><td>${money(r.fees)}</td><td>${money(r.remaining)}</td><td>${moneyFormatter.format(r.percent)} %</td><td>${money(r.share)}</td></tr>`;
+    }).join("");
+  }
+
+  function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
+  function isoToday(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
+
+  function formData(){
+    const data={mode:selectedMode()};
+    document.querySelectorAll("input:not([type=radio])").forEach(el=>data[el.id]=el.value);
+    return data;
+  }
+
+  function saveForm(){
+    localStorage.setItem("automatenAbrechnungV9",JSON.stringify(formData()));
+    const msg=document.getElementById("savedMessage");
+    msg.textContent="Abrechnung auf diesem iPhone gespeichert.";
+    setTimeout(()=>msg.textContent="",3000);
+  }
+
+  function loadForm(){
+    const raw=localStorage.getItem("automatenAbrechnungV9");
+    if(!raw){document.getElementById("date").value=isoToday();return}
+    try{
+      const data=JSON.parse(raw);
+      if(data.mode&&document.getElementById(data.mode))document.getElementById(data.mode).checked=true;
+      for(const [id,value] of Object.entries(data))if(id!=="mode"&&document.getElementById(id))document.getElementById(id).value=value;
+    }catch(_){document.getElementById("date").value=isoToday()}
+  }
+
+  function newForm(){
+    if(!confirm("Möchtest du alle Eingaben für eine neue Abrechnung löschen?"))return;
+    document.querySelectorAll("input:not([type=radio])").forEach(el=>el.value="");
+    document.getElementById("inclusive").checked=true;
+    document.getElementById("date").value=isoToday();
+    localStorage.removeItem("automatenAbrechnungV9");
+    calculate();
+  }
+
+  document.addEventListener("input",e=>{if(e.target.matches("input"))calculate()});
+  document.addEventListener("change",e=>{if(e.target.matches("input"))calculate()});
+  document.getElementById("saveBtn").addEventListener("click",saveForm);
+  document.getElementById("printBtn").addEventListener("click",()=>{calculate();window.print()});
+  document.getElementById("newBtn").addEventListener("click",newForm);
+  loadForm();
+  calculate();
+</script>
+</body>
+</html>
