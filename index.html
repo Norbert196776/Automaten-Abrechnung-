@@ -206,7 +206,7 @@
   }
 
   function updatePrintRows(rows){
-    document.getElementById("printRows").innerHTML=rows.map((r,i)=>{
+    document.getElementById("printRows").innerHTML=rows.map((r,i)=>({r,i})).filter(({r})=>r.cash!==0).map(({r,i})=>{
       const name=document.getElementById(`name${i}`).value.trim()||`Automat ${i+1}`;
       const serial=document.getElementById(`serial${i}`).value.trim();
       return `<tr><td>${escapeHtml(name)}${serial?` / ${escapeHtml(serial)}`:""}</td><td>${money(r.cash)}</td><td>${money(r.playerVat)}</td><td>${money(r.net)}</td><td>${money(r.tax)}</td><td>${money(r.fees)}</td><td>${money(r.remaining)}</td><td>${moneyFormatter.format(r.percent)} %</td><td>${money(r.share)}</td></tr>`;
