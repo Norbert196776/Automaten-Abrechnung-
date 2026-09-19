@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#1769aa">
-  <title>Automaten-Abrechnung V9</title>
+  <title>Automaten-Abrechnung V10</title>
   <style>
     :root{--blue:#1769aa;--blue2:#e9f3fb;--bg:#f2f2f7;--card:#fff;--line:#d7d7dc;--text:#1c1c1e;--muted:#666;--danger:#b42318}
     *{box-sizing:border-box}
@@ -44,31 +44,48 @@
       @page{size:A4 landscape;margin:10mm}
       body{background:#fff;padding:0;font-size:10pt}
       main{max-width:none}
-      .screen-only,.actions,.saved{display:none!important}
+      .screen-only,.screen-view,.actions,.saved{display:none!important}
       .print-only{display:block}
-      .card{box-shadow:none;border:1px solid #777;border-radius:0;margin:6px 0;padding:8px;break-inside:avoid}
-      h1{font-size:20pt}
-      h2{font-size:13pt;margin-bottom:6px}
-      input{border:0;padding:0;font-size:10pt}
+      .card{box-shadow:none;border:0;border-radius:0;margin:0;padding:0;break-inside:avoid}
       .device-card{display:none}
-      .print-table{width:100%;border-collapse:collapse;margin-top:8px}
-      .print-table th,.print-table td{border:1px solid #444;padding:5px;text-align:right}
-      .print-table th:first-child,.print-table td:first-child{text-align:left}
-      .print-table th{background:#eee}
-      .summary{display:grid;grid-template-columns:1fr 1fr;gap:0 22px}
-      .summary h2{grid-column:1/-1}
-      .summary .total{grid-column:1/-1}
+      .print-form{font-size:9pt;color:#000}
+      .print-title{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #000;padding-bottom:5px;margin-bottom:6px}
+      .print-title h1{font-size:19pt;margin:0}
+      .print-number{font-size:13pt;font-weight:800;border:1px solid #000;padding:4px 10px;min-width:125px;text-align:center}
+      .print-meta{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;margin-bottom:7px}
+      .print-field{display:grid;grid-template-columns:125px 1fr;border-bottom:1px solid #555;min-height:21px;align-items:end;padding:2px 0}
+      .print-field span:first-child{font-weight:700}
+      .print-field b{font-weight:600}
+      .print-mode{font-weight:800;margin:5px 0}
+      .print-table{width:100%;border-collapse:collapse;table-layout:fixed}
+      .print-table th,.print-table td{border:1px solid #222;padding:4px 3px;text-align:right;vertical-align:middle}
+      .print-table th{background:#e7e7e7;text-align:center;font-size:8pt;line-height:1.15}
+      .print-table th:first-child,.print-table td:first-child{text-align:left;width:16%}
+      .print-table th:last-child,.print-table td:last-child{width:10%}
+      .print-table .sum-row td{font-weight:800;border-top:2px solid #000}
+      .print-bottom{display:grid;grid-template-columns:1.35fr .65fr;gap:14px;margin-top:8px}
+      .print-totals{border:1px solid #222}
+      .print-total-row{display:flex;justify-content:space-between;gap:12px;padding:5px 7px;border-bottom:1px solid #777}
+      .print-total-row:last-child{border-bottom:0}
+      .print-total-row strong{font-size:12pt}
+      .print-payout{border:2px solid #000;display:flex;flex-direction:column;justify-content:center;text-align:center;padding:8px}
+      .print-payout span{font-size:10pt;font-weight:700}
+      .print-payout b{font-size:22pt;margin-top:5px}
+      .print-words{border-bottom:1px solid #333;margin-top:9px;padding:3px 0 8px}
+      .print-confirm{margin-top:10px;font-size:8pt}
+      .print-signatures{display:grid;grid-template-columns:1fr 1fr;gap:55px;margin-top:25px}
+      .print-signature{border-top:1px solid #000;padding-top:3px;text-align:center}
     }
   </style>
 </head>
 <body>
 <main>
-  <header>
+  <header class="screen-view">
     <h1>Automaten-Abrechnung</h1>
-    <p class="note">Version 9 · vier Automaten · Rundung auf 10 Cent</p>
+    <p class="note">Version 10 · vier Automaten · Formularausdruck · Rundung auf 10 Cent</p>
   </header>
 
-  <section class="card">
+  <section class="card screen-view">
     <h2>Abrechnungsart</h2>
     <div class="mode">
       <input type="radio" name="mode" id="inclusive" value="inclusive" checked>
@@ -78,7 +95,7 @@
     </div>
   </section>
 
-  <section class="card">
+  <section class="card screen-view">
     <h2>Kopfdaten</h2>
     <div class="grid">
       <div><label for="number">Abrechnung Nr.</label><input id="number" autocomplete="off"></div>
@@ -95,15 +112,48 @@
 
   <div id="devices"></div>
 
-  <section class="card print-only">
-    <h2>Geräteabrechnung</h2>
+  <section class="print-only print-form">
+    <div class="print-title">
+      <h1>Automaten-Abrechnung</h1>
+      <div class="print-number">Nr. <span id="pNumber"></span></div>
+    </div>
+    <div class="print-meta">
+      <div>
+        <div class="print-field"><span>Wirt / Kunde</span><b id="pCustomer"></b></div>
+        <div class="print-field"><span>Straße</span><b id="pStreet"></b></div>
+        <div class="print-field"><span>PLZ / Ort</span><b id="pPlace"></b></div>
+        <div class="print-field"><span>Steuer-/USt-ID</span><b id="pCustomerTax"></b></div>
+      </div>
+      <div>
+        <div class="print-field"><span>Heutiges Datum</span><b id="pDate"></b></div>
+        <div class="print-field"><span>Letzte Abrechnung</span><b id="pLastDate"></b></div>
+        <div class="print-field"><span>USt-ID Aufsteller</span><b id="pOperatorTax"></b></div>
+        <div class="print-field"><span>Abrechnungsart</span><b id="pMode"></b></div>
+      </div>
+    </div>
+    <div class="print-mode">Geräteabrechnung</div>
     <table class="print-table">
-      <thead><tr><th>Gerät / Nr.</th><th>Kasseninhalt</th><th>MwSt. Spieler</th><th>Netto</th><th>Vergnügungsst.</th><th>Gebühren</th><th>Verbleib</th><th>%</th><th>Anteil Wirt</th></tr></thead>
+      <thead><tr><th>Geldspielgerät</th><th>Kassen-<br>inhalt</th><th>MwSt. vom<br>Spieler</th><th>Netto</th><th>Vergnügungs-<br>steuer</th><th>Gebühren</th><th>Verbleibt zur<br>Abrechnung</th><th>%</th><th>Anteil des<br>Wirtes</th><th>Geräte-Nr.</th></tr></thead>
       <tbody id="printRows"></tbody>
+      <tfoot><tr class="sum-row"><td>Zusammen</td><td id="pSumCash"></td><td id="pSumPlayerVat"></td><td id="pSumNet"></td><td id="pSumTax"></td><td id="pSumFees"></td><td id="pSumRemaining"></td><td></td><td id="pSumShare"></td><td></td></tr></tfoot>
     </table>
+    <div class="print-bottom">
+      <div class="print-totals">
+        <div class="print-total-row"><span>Verbleibt zur Abrechnung</span><b id="pRemaining"></b></div>
+        <div class="print-total-row"><span>Anteil des Wirtes</span><b id="pShare"></b></div>
+        <div class="print-total-row"><span id="pVatLabel"></span><b id="pHostVat"></b></div>
+      </div>
+      <div class="print-payout"><span>Auszahlung</span><b id="pPayout"></b></div>
+    </div>
+    <div class="print-words"><b>Auszahlung in Worten:</b></div>
+    <div class="print-confirm">Wir bestätigen die Richtigkeit obiger Abrechnung einschließlich der Mehrwertsteuerberechnung und den Empfang des angegebenen Betrages.</div>
+    <div class="print-signatures">
+      <div class="print-signature">Wirt / Kunde</div>
+      <div class="print-signature">Aufstellunternehmen</div>
+    </div>
   </section>
 
-  <section class="card summary">
+  <section class="card summary screen-view">
     <h2>Gesamtabrechnung</h2>
     <div class="row"><span>Kasseninhalt gesamt</span><b id="tCash">0,00 €</b></div>
     <div class="row"><span>MwSt. vom Spieler bezahlt</span><b id="tPlayerVat">0,00 €</b></div>
@@ -202,15 +252,44 @@
     document.getElementById("tHostVat").textContent=money(totals.hostVat);
     document.getElementById("tPayout").textContent=money(totals.payout);
     document.getElementById("vatLabel").textContent=selectedMode()==="inclusive"?"Enthaltene MwSt. im Wirtsanteil":"Zuzüglich 19 % MwSt. auf Wirtsanteil";
-    updatePrintRows(rows);
+    updatePrintRows(rows,totals);
   }
 
-  function updatePrintRows(rows){
+  function formatDate(value){
+    if(!value)return "";
+    const parts=value.split("-");
+    return parts.length===3?`${parts[2]}.${parts[1]}.${parts[0]}`:value;
+  }
+
+  function setPrintText(id,value){document.getElementById(id).textContent=value}
+
+  function updatePrintRows(rows,totals){
     document.getElementById("printRows").innerHTML=rows.map((r,i)=>({r,i})).filter(({r})=>r.cash!==0).map(({r,i})=>{
       const name=document.getElementById(`name${i}`).value.trim()||`Automat ${i+1}`;
       const serial=document.getElementById(`serial${i}`).value.trim();
-      return `<tr><td>${escapeHtml(name)}${serial?` / ${escapeHtml(serial)}`:""}</td><td>${money(r.cash)}</td><td>${money(r.playerVat)}</td><td>${money(r.net)}</td><td>${money(r.tax)}</td><td>${money(r.fees)}</td><td>${money(r.remaining)}</td><td>${moneyFormatter.format(r.percent)} %</td><td>${money(r.share)}</td></tr>`;
+      return `<tr><td>${escapeHtml(name)}</td><td>${money(r.cash)}</td><td>${money(r.playerVat)}</td><td>${money(r.net)}</td><td>${money(r.tax)}</td><td>${money(r.fees)}</td><td>${money(r.remaining)}</td><td>${moneyFormatter.format(r.percent)} %</td><td>${money(r.share)}</td><td>${escapeHtml(serial)}</td></tr>`;
     }).join("");
+    setPrintText("pNumber",document.getElementById("number").value.trim());
+    setPrintText("pCustomer",document.getElementById("customer").value.trim());
+    setPrintText("pStreet",document.getElementById("street").value.trim());
+    setPrintText("pPlace",`${document.getElementById("zip").value.trim()} ${document.getElementById("city").value.trim()}`.trim());
+    setPrintText("pCustomerTax",document.getElementById("customerTax").value.trim());
+    setPrintText("pDate",formatDate(document.getElementById("date").value));
+    setPrintText("pLastDate",formatDate(document.getElementById("lastDate").value));
+    setPrintText("pOperatorTax",document.getElementById("operatorTax").value.trim());
+    setPrintText("pMode",selectedMode()==="inclusive"?"Inklusive Mehrwertsteuer":"Exklusive Mehrwertsteuer");
+    setPrintText("pSumCash",money(totals.cash));
+    setPrintText("pSumPlayerVat",money(totals.playerVat));
+    setPrintText("pSumNet",money(totals.net));
+    setPrintText("pSumTax",money(totals.tax));
+    setPrintText("pSumFees",money(totals.fees));
+    setPrintText("pSumRemaining",money(totals.remaining));
+    setPrintText("pSumShare",money(totals.share));
+    setPrintText("pRemaining",money(totals.remaining));
+    setPrintText("pShare",money(totals.share));
+    setPrintText("pVatLabel",selectedMode()==="inclusive"?"Enthaltene MwSt. im Wirtsanteil":"Zuzüglich 19 % MwSt. auf Wirtsanteil");
+    setPrintText("pHostVat",money(totals.hostVat));
+    setPrintText("pPayout",money(totals.payout));
   }
 
   function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
