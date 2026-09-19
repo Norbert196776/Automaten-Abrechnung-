@@ -190,9 +190,13 @@
   const moneyFormatter=new Intl.NumberFormat("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2});
   const deviceContainer=document.getElementById("devices");
 
+  function deviceLabel(i){
+    return i===1?"Unterhaltungsgerät":"Automat";
+  }
+
   function deviceTemplate(i){
     return `<section class="card device-card" data-device="${i}">
-      <div class="device-head"><h2>Automat ${i+1}</h2><span class="badge">Gerät ${i+1}</span></div>
+      <div class="device-head"><h2>${deviceLabel(i)}</h2><span class="badge">Gerät ${i+1}</span></div>
       <div class="grid">
         <div><label for="name${i}">Geldspielgerät / Bezeichnung</label><input id="name${i}" autocomplete="off"></div>
         <div><label for="serial${i}">Geräte-Nr.</label><input id="serial${i}" autocomplete="off"></div>
@@ -274,7 +278,7 @@
 
   function updatePrintRows(rows,totals){
     document.getElementById("printRows").innerHTML=rows.map((r,i)=>({r,i})).filter(({r})=>r.cash!==0).map(({r,i})=>{
-      const name=document.getElementById(`name${i}`).value.trim()||`Automat ${i+1}`;
+      const name=document.getElementById(`name${i}`).value.trim()||deviceLabel(i);
       const serial=document.getElementById(`serial${i}`).value.trim();
       return `<tr><td>${escapeHtml(name)}</td><td>${money(r.cash)}</td><td>${money(r.playerVat)}</td><td>${money(r.net)}</td><td>${money(r.tax)}</td><td>${money(r.fees)}</td><td>${money(r.remaining)}</td><td>${moneyFormatter.format(r.percent)} %</td><td>${money(r.share)}</td><td>${escapeHtml(serial)}</td></tr>`;
     }).join("");
