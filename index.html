@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#1769aa">
-  <title>Automaten-Abrechnung V10</title>
+  <title>Automaten-Abrechnung V11</title>
   <style>
     :root{--blue:#1769aa;--blue2:#e9f3fb;--bg:#f2f2f7;--card:#fff;--line:#d7d7dc;--text:#1c1c1e;--muted:#666;--danger:#b42318}
     *{box-sizing:border-box}
@@ -31,7 +31,7 @@
     .row b{text-align:right;white-space:nowrap}
     .strong{font-size:18px;font-weight:800}
     .summary .row{font-size:17px}
-    .summary .total{font-size:21px;color:var(--blue);padding-top:13px}
+    .summary .total{font-size:18px;color:var(--blue);padding-top:13px}
     .actions{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px}
     button{border:0;border-radius:11px;padding:13px 10px;font:inherit;font-weight:700;cursor:pointer}
     .primary{background:var(--blue);color:#fff}
@@ -41,14 +41,14 @@
     .print-only{display:none}
     @media(max-width:620px){body{padding:12px}.grid{grid-template-columns:1fr}.span2{grid-column:auto}.actions{grid-template-columns:1fr}.card{padding:14px}h1{font-size:28px}}
     @media print{
-      @page{size:A4 portrait;margin:9mm}
-      body{background:#fff;padding:0;font-size:9.5pt}
+      @page{size:A4 landscape;margin:10mm}
+      body{background:#fff;padding:0;font-size:10pt}
       main{max-width:none}
       .screen-only,.screen-view,.actions,.saved{display:none!important}
       .print-only{display:block}
       .card{box-shadow:none;border:0;border-radius:0;margin:0;padding:0;break-inside:avoid}
       .device-card{display:none}
-      .print-form{font-size:8.8pt;color:#000;width:100%}
+      .print-form{font-size:9pt;color:#000}
       .print-title{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #000;padding-bottom:5px;margin-bottom:6px}
       .print-title h1{font-size:19pt;margin:0}
       .print-number{font-size:13pt;font-weight:800;border:1px solid #000;padding:4px 10px;min-width:125px;text-align:center}
@@ -58,19 +58,10 @@
       .print-field b{font-weight:600}
       .print-mode{font-weight:800;margin:5px 0}
       .print-table{width:100%;border-collapse:collapse;table-layout:fixed}
-      .print-table th,.print-table td{border:1px solid #222;padding:4px 2px;text-align:right;vertical-align:middle}
-      .print-table th{background:#e7e7e7;text-align:center;font-size:6.8pt;line-height:1.12;overflow-wrap:anywhere;hyphens:auto}
-      .print-table td{font-size:7.3pt;white-space:nowrap}
-      .print-table th:nth-child(1),.print-table td:nth-child(1){width:14%;text-align:left;white-space:normal}
-      .print-table th:nth-child(2),.print-table td:nth-child(2){width:10%}
-      .print-table th:nth-child(3),.print-table td:nth-child(3){width:10%}
-      .print-table th:nth-child(4),.print-table td:nth-child(4){width:9%}
-      .print-table th:nth-child(5),.print-table td:nth-child(5){width:10%}
-      .print-table th:nth-child(6),.print-table td:nth-child(6){width:8%}
-      .print-table th:nth-child(7),.print-table td:nth-child(7){width:12%}
-      .print-table th:nth-child(8),.print-table td:nth-child(8){width:5%}
-      .print-table th:nth-child(9),.print-table td:nth-child(9){width:12%}
-      .print-table th:nth-child(10),.print-table td:nth-child(10){width:10%;white-space:normal}
+      .print-table th,.print-table td{border:1px solid #222;padding:4px 3px;text-align:right;vertical-align:middle}
+      .print-table th{background:#e7e7e7;text-align:center;font-size:8pt;line-height:1.15}
+      .print-table th:first-child,.print-table td:first-child{text-align:left;width:16%}
+      .print-table th:last-child,.print-table td:last-child{width:10%}
       .print-table .sum-row td{font-weight:800;border-top:2px solid #000}
       .print-bottom{display:grid;grid-template-columns:1.35fr .65fr;gap:14px;margin-top:8px}
       .print-totals{border:1px solid #222}
@@ -79,7 +70,7 @@
       .print-total-row strong{font-size:12pt}
       .print-payout{border:2px solid #000;display:flex;flex-direction:column;justify-content:center;text-align:center;padding:8px}
       .print-payout span{font-size:10pt;font-weight:700}
-      .print-payout b{font-size:22pt;margin-top:5px}
+      .print-payout b{font-size:14pt;margin-top:5px}
       .print-words{border-bottom:1px solid #333;margin-top:9px;padding:3px 0 8px}
       .print-confirm{margin-top:10px;font-size:8pt}
       .print-signatures{display:grid;grid-template-columns:1fr 1fr;gap:55px;margin-top:25px}
@@ -91,7 +82,7 @@
 <main>
   <header class="screen-view">
     <h1>Automaten-Abrechnung</h1>
-    <p class="note">Version 10 · vier Automaten · Formularausdruck · Rundung auf 10 Cent</p>
+    <p class="note">Version 11 · vier Automaten · Formularausdruck · Rundung auf 10 Cent</p>
   </header>
 
   <section class="card screen-view">
@@ -142,7 +133,7 @@
     </div>
     <div class="print-mode">Geräteabrechnung</div>
     <table class="print-table">
-      <thead><tr><th>Geldspielgerät</th><th>Kassen-<br>inhalt</th><th>MwSt. vom<br>Spieler</th><th>Netto</th><th>Vergnügungs-<br>steuer</th><th>Gebühren</th><th>Verbleibt zur<br>Abrechnung</th><th>%</th><th>Anteil des<br>Wirtes</th><th>Geräte-Nr.</th></tr></thead>
+      <thead><tr><th>Geldspielgerät</th><th>Kassen-<br>inhalt</th><th>MwSt. vom<br>Spieler</th><th>Netto</th><th>Vergnügungs-<br>steuer</th><th>Gebühren</th><th>Verbleibt zur<br>Abrechnung</th><th>Anteil</th><th>Anteil des<br>Wirtes</th><th>Geräte-Nr.</th></tr></thead>
       <tbody id="printRows"></tbody>
       <tfoot><tr class="sum-row"><td>Zusammen</td><td id="pSumCash"></td><td id="pSumPlayerVat"></td><td id="pSumNet"></td><td id="pSumTax"></td><td id="pSumFees"></td><td id="pSumRemaining"></td><td></td><td id="pSumShare"></td><td></td></tr></tfoot>
     </table>
@@ -190,20 +181,16 @@
   const moneyFormatter=new Intl.NumberFormat("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2});
   const deviceContainer=document.getElementById("devices");
 
-  function deviceLabel(i){
-    return i===1?"Unterhaltungsgerät":"Automat";
-  }
-
   function deviceTemplate(i){
     return `<section class="card device-card" data-device="${i}">
-      <div class="device-head"><h2>${deviceLabel(i)}</h2><span class="badge">Gerät ${i+1}</span></div>
+      <div class="device-head"><h2>Automat ${i+1}</h2><span class="badge">Gerät ${i+1}</span></div>
       <div class="grid">
         <div><label for="name${i}">Geldspielgerät / Bezeichnung</label><input id="name${i}" autocomplete="off"></div>
         <div><label for="serial${i}">Geräte-Nr.</label><input id="serial${i}" autocomplete="off"></div>
-        <div><label for="cash${i}">Kasseninhalt €</label><input id="cash${i}" inputmode="decimal" placeholder="0,00"></div>
-        <div><label for="tax${i}">Vergnügungssteuer €</label><input id="tax${i}" inputmode="decimal" placeholder="0,00"></div>
-        <div><label for="fees${i}">Gebühren €</label><input id="fees${i}" inputmode="decimal" placeholder="0,00"></div>
-        <div><label for="percent${i}">Anteil des Wirtes %</label><input id="percent${i}" inputmode="decimal" placeholder="z. B. 50"></div>
+        <div><label for="cash${i}">Kasseninhalt</label><input id="cash${i}" inputmode="decimal" placeholder="0,00"></div>
+        <div><label for="tax${i}">Vergnügungssteuer</label><input id="tax${i}" inputmode="decimal" placeholder="0,00"></div>
+        <div><label for="fees${i}">Gebühren</label><input id="fees${i}" inputmode="decimal" placeholder="0,00"></div>
+        <div><label for="percent${i}">Anteil des Wirtes</label><input id="percent${i}" inputmode="decimal" placeholder="z. B. 50"></div>
       </div>
       <div class="results">
         <div class="row"><span>MwSt. vom Spieler bezahlt</span><b id="playerVat${i}">0,00 €</b></div>
@@ -225,7 +212,7 @@
 
   function read(id){return parseNumber(document.getElementById(id).value)}
   function round10(n){return Math.round((n+Number.EPSILON)*10)/10}
-  function money(n){return moneyFormatter.format(round10(n))+" €"}
+  function money(n){return moneyFormatter.format(round10(n))}
   function safe(n){return Math.max(0,round10(n))}
   function selectedMode(){return document.querySelector('input[name="mode"]:checked').value}
 
@@ -278,9 +265,9 @@
 
   function updatePrintRows(rows,totals){
     document.getElementById("printRows").innerHTML=rows.map((r,i)=>({r,i})).filter(({r})=>r.cash!==0).map(({r,i})=>{
-      const name=document.getElementById(`name${i}`).value.trim()||deviceLabel(i);
+      const name=document.getElementById(`name${i}`).value.trim()||`Automat ${i+1}`;
       const serial=document.getElementById(`serial${i}`).value.trim();
-      return `<tr><td>${escapeHtml(name)}</td><td>${money(r.cash)}</td><td>${money(r.playerVat)}</td><td>${money(r.net)}</td><td>${money(r.tax)}</td><td>${money(r.fees)}</td><td>${money(r.remaining)}</td><td>${moneyFormatter.format(r.percent)} %</td><td>${money(r.share)}</td><td>${escapeHtml(serial)}</td></tr>`;
+      return `<tr><td>${escapeHtml(name)}</td><td>${money(r.cash)}</td><td>${money(r.playerVat)}</td><td>${money(r.net)}</td><td>${money(r.tax)}</td><td>${money(r.fees)}</td><td>${money(r.remaining)}</td><td>${moneyFormatter.format(r.percent)}</td><td>${money(r.share)}</td><td>${escapeHtml(serial)}</td></tr>`;
     }).join("");
     setPrintText("pNumber",document.getElementById("number").value.trim());
     setPrintText("pCustomer",document.getElementById("customer").value.trim());
