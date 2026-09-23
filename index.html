@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#1769aa">
-  <title>Automaten-Abrechnung V12</title>
+  <title>Automaten-Abrechnung V13</title>
   <style>
     :root{--blue:#1769aa;--blue2:#e9f3fb;--bg:#f2f2f7;--card:#fff;--line:#d7d7dc;--text:#1c1c1e;--muted:#666;--danger:#b42318}
     *{box-sizing:border-box}
@@ -39,6 +39,25 @@
     .danger{background:#feeceb;color:var(--danger)}
     .saved{min-height:22px;color:#287a3f;text-align:center;margin:10px 0 0;font-weight:600}
     .print-only{display:none}
+    .preview-toolbar{display:none}
+    .print-preview{background:#fff}
+    .print-preview .screen-view,.print-preview .screen-only,.print-preview #devices{display:none!important}
+    .print-preview .print-only,.print-preview .preview-toolbar{display:block}
+    .print-preview .print-form{font-size:11pt;color:#000}
+    .print-preview .print-table{width:100%;border-collapse:collapse;table-layout:fixed}
+    .print-preview .print-table th,.print-preview .print-table td{border:1px solid #222;padding:4px;text-align:right}
+    .print-preview .print-table th:first-child,.print-preview .print-table td:first-child{text-align:left}
+    .print-preview .print-title{display:flex;justify-content:space-between;align-items:end;border-bottom:2px solid #000}
+    .print-preview .print-meta{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+    .print-preview .print-field{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #777;padding:4px 0}
+    .print-preview .print-bottom{display:grid;grid-template-columns:1.35fr .65fr;gap:14px;margin-top:8px}
+    .print-preview .print-total-row{display:flex;justify-content:space-between;padding:5px;border-bottom:1px solid #777}
+    .print-preview .print-payout{text-align:center;border:2px solid #000;padding:8px}
+    .print-preview .print-signatures{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:30px}
+    .print-preview .print-signature{border-top:1px solid #000;text-align:center}
+    .preview-toolbar{background:var(--blue2);border-radius:14px;padding:14px;margin-bottom:16px}
+    .preview-toolbar p{margin:0 0 12px;line-height:1.4}
+    .preview-toolbar button{margin:0 8px 8px 0}
     .no-customer-mode .customer-detail{display:none!important}
     @media(max-width:620px){body{padding:12px}.grid{grid-template-columns:1fr}.span2{grid-column:auto}.actions{grid-template-columns:1fr}.card{padding:14px}h1{font-size:28px}.mode{grid-template-columns:1fr}.mode label{padding:10px 8px}}
     @media print{
@@ -46,6 +65,7 @@
       body{background:#fff;padding:0;font-size:10pt}
       main{max-width:none}
       .screen-only,.screen-view,.actions,.saved{display:none!important}
+      .preview-toolbar{display:none!important}
       .print-only{display:block}
       .card{box-shadow:none;border:0;border-radius:0;margin:0;padding:0;break-inside:avoid}
       .device-card{display:none}
@@ -81,9 +101,14 @@
 </head>
 <body>
 <main>
+  <div class="preview-toolbar" id="previewToolbar">
+    <p>Die Druckansicht ist geöffnet. Auf dem iPhone: In Safari unten auf „Teilen“ tippen und „Drucken“ wählen. Für PDF in der Druckvorschau erneut „Teilen“ wählen.</p>
+    <button type="button" class="primary" id="tryPrintBtn">Druckdialog öffnen</button>
+    <button type="button" class="secondary" id="backFromPrintBtn">Zurück zur Abrechnung</button>
+  </div>
   <header class="screen-view">
     <h1>Automaten-Abrechnung</h1>
-    <p class="note">Version 12 · drei Abrechnungsarten · vier Automaten</p>
+    <p class="note">Version 13 · drei Abrechnungsarten · vier Automaten</p>
   </header>
 
   <section class="card screen-view">
@@ -172,7 +197,7 @@
   <section class="card screen-only">
     <div class="actions">
       <button type="button" class="primary" id="saveBtn">Abrechnung speichern</button>
-      <button type="button" class="secondary" id="printBtn">Drucken / PDF</button>
+      <button type="button" class="secondary" id="printBtn">Druckansicht / PDF</button>
       <button type="button" class="danger" id="newBtn">Neue Abrechnung</button>
     </div>
     <p class="saved" id="savedMessage"></p>
@@ -334,7 +359,16 @@
   document.addEventListener("input",e=>{if(e.target.matches("input"))calculate()});
   document.addEventListener("change",e=>{if(e.target.matches("input"))calculate()});
   document.getElementById("saveBtn").addEventListener("click",saveForm);
-  document.getElementById("printBtn").addEventListener("click",()=>{calculate();window.print()});
+  document.getElementById("printBtn").addEventListener("click",()=>{
+    calculate();
+    document.body.classList.add("print-preview");
+    window.scrollTo(0,0);
+  });
+  document.getElementById("tryPrintBtn").addEventListener("click",()=>window.print());
+  document.getElementById("backFromPrintBtn").addEventListener("click",()=>{
+    document.body.classList.remove("print-preview");
+    window.scrollTo(0,0);
+  });
   document.getElementById("newBtn").addEventListener("click",newForm);
   loadForm();
   calculate();
