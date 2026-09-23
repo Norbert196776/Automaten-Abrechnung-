@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#1769aa">
-  <title>Automaten-Abrechnung V14</title>
+  <title>Automaten-Abrechnung V15</title>
   <style>
     :root{--blue:#1769aa;--blue2:#e9f3fb;--bg:#f2f2f7;--card:#fff;--line:#d7d7dc;--text:#1c1c1e;--muted:#666;--danger:#b42318}
     *{box-sizing:border-box}
@@ -58,6 +58,8 @@
     .preview-toolbar{background:var(--blue2);border-radius:14px;padding:14px;margin-bottom:16px}
     .preview-toolbar p{margin:0 0 12px;line-height:1.4}
     .preview-toolbar button{margin:0 8px 8px 0}
+    .preview-toolbar label{display:block;margin:0 0 4px;font-weight:700}
+    .preview-toolbar select{width:100%;font:inherit;font-size:18px;padding:10px;border-radius:10px;border:1px solid #b8b8bd;background:#fff;margin-bottom:12px}
     .no-customer-mode .customer-detail{display:none!important}
     .no-customer-mode .print-signature:first-child{display:none}
     .no-customer-mode .print-signatures{grid-template-columns:1fr}
@@ -105,6 +107,12 @@
 <main>
   <div class="preview-toolbar" id="previewToolbar">
     <p>Die Druckansicht ist geöffnet. Über „PDF teilen / sichern“ kannst du die Abrechnung direkt aus der App als PDF weitergeben, sichern oder drucken.</p>
+    <label for="pdfFontSize">Schriftgröße im PDF</label>
+    <select id="pdfFontSize">
+      <option value="1">Normal</option>
+      <option value="1.25" selected>Groß</option>
+      <option value="1.5">Sehr groß</option>
+    </select>
     <button type="button" class="primary" id="sharePdfBtn" disabled>PDF wird vorbereitet …</button>
     <button type="button" class="primary" id="tryPrintBtn">Druckdialog öffnen</button>
     <button type="button" class="secondary" id="backFromPrintBtn">Zurück zur Abrechnung</button>
@@ -112,7 +120,7 @@
   </div>
   <header class="screen-view">
     <h1>Automaten-Abrechnung</h1>
-    <p class="note">Version 14 · PDF direkt aus der App · drei Abrechnungsarten</p>
+    <p class="note">Version 15 · größere Schrift im PDF · drei Abrechnungsarten</p>
   </header>
 
   <section class="card screen-view">
@@ -384,6 +392,7 @@
       .replace(/[“”]/g,'"').replace(/[^\x20-\x7e\u00a0-\u00ff\u20ac]/g,"?");
   }
   async function makePdf(){
+    const pdfScale=Number(document.getElementById("pdfFontSize").value)||1.25;
     const doc=await PDFLib.PDFDocument.create();
     const page=doc.addPage([842,595]);
     const normal=await doc.embedFont(PDFLib.StandardFonts.Helvetica);
@@ -393,22 +402,26 @@
     const pale=PDFLib.rgb(0.92,0.95,0.98);
     function fit(value,width,font,size){
       let valueText=pdfText(value);
-      while(valueText.length&&font.widthOfTextAtSize(valueText,size)>width-8)valueText=valueText.slice(0,-1);
-      return valueText;
+      let fittedSize=size;
+      const textWidth=font.widthOfTextAtSize(valueText,size);
+      if(textWidth>width-8)fittedSize=Math.max(7,size*(width-8)/textWidth);
+      while(valueText.length&&font.widthOfTextAtSize(valueText,fittedSize)>width-8)valueText=valueText.slice(0,-1);
+      return {valueText,fittedSize};
     }
     function txt(value,x,y,size=9,isBold=false,maxWidth=770){
       const font=isBold?bold:normal;
-      page.drawText(fit(value,maxWidth,font,size),{x,y,size,font,color:black});
+      const fitted=fit(value,maxWidth,font,size);
+      if(fitted.valueText)page.drawText(fitted.valueText,{x,y,size:fitted.fittedSize,font,color:black});
     }
     function rule(x1,y1,x2,y2,width=0.7){
       page.drawLine({start:{x:x1,y:y1},end:{x:x2,y:y2},thickness:width,color:grey});
     }
-    txt("Automaten-Abrechnung",36,545,19,true,500);
-    txt("Nr. "+document.getElementById("number").value.trim(),600,545,11,true,205);
+    txt("Automaten-Abrechnung",36,545,19+5*(pdfScale-1),true,500);
+    txt("Nr. "+document.getElementById("number").value.trim(),600,545,11*pdfScale,true,205);
     rule(36,533,806,533,1.2);
     const mode=selectedMode();
     const onlyCash=mode==="withoutCustomer";
-    txt("Abrechnungsart: "+(onlyCash?"Ohne Kunde":mode==="inclusive"?"Inklusive MwSt.":"Exklusive MwSt."),36,513,10,true);
+    txt("Abrechnungsart: "+(onlyCash?"Ohne Kunde":mode==="inclusive"?"Inklusive MwSt.":"Exklusive MwSt."),36,513,10*pdfScale,true);
     const meta=onlyCash?[
       ["Datum",formatDate(document.getElementById("date").value)],
       ["Letzte Abrechnung",formatDate(document.getElementById("lastDate").value)],
@@ -424,8 +437,8 @@
     ];
     meta.forEach(([label,value],i)=>{
       const x=i%2?427:36,y=491-Math.floor(i/2)*17;
-      txt(label+":",x,y,8,true,130);
-      txt(value,x+130,y,8,false,240);
+      txt(label+":",x,y,9*pdfScale,true,130);
+      txt(value,x+130,y,9*pdfScale,false,240);
     });
     const columns=onlyCash?[
       ["Gerät",220],["Kasseninhalt",140],["MwSt.",140],["Netto",140],["Geräte-Nr.",130]
@@ -436,12 +449,14 @@
     ];
     let top=406;
     function tableRow(values,header=false,total=false){
-      const height=27,bottom=top-height;
+      const height=onlyCash?Math.round(32*pdfScale):Math.min(36,Math.round(30*pdfScale));
+      const bottom=top-height;
       if(header||total)page.drawRectangle({x:36,y:bottom,width:770,height,color:pale});
       let x=36;
       columns.forEach(([,width],i)=>{
         rule(x,bottom,x,top);
-        txt(values[i]??"",x+4,bottom+9,header?8:8,header||total,width-7);
+        txt(values[i]??"",x+4,bottom+(height-9*pdfScale)/2,
+          (onlyCash?11:9)*pdfScale,header||total,width-7);
         x+=width;
       });
       rule(806,bottom,806,top);
@@ -468,18 +483,19 @@
     ],false,true);
     if(!onlyCash){
       let y=top-22;
-      txt("Verbleibt zur Abrechnung",36,y,10,true,220);txt(money(totals.remaining),300,y,10,true,100);y-=19;
-      txt("Anteil des Wirtes",36,y,10,true,220);txt(money(totals.share),300,y,10,true,100);y-=19;
-      txt(mode==="inclusive"?"Enthaltene MwSt. im Wirtsanteil":"Zuzüglich 19 % MwSt. auf Wirtsanteil",36,y,9,false,260);
-      txt(money(totals.hostVat),300,y,10,true,100);
-      txt("Auszahlung",505,top-35,12,true,120);txt(money(totals.payout),635,top-35,14,true,160);
+      const footerSize=10*Math.min(pdfScale,1.2);
+      txt("Verbleibt zur Abrechnung",36,y,footerSize,true,220);txt(money(totals.remaining),300,y,footerSize,true,100);y-=19;
+      txt("Anteil des Wirtes",36,y,footerSize,true,220);txt(money(totals.share),300,y,footerSize,true,100);y-=19;
+      txt(mode==="inclusive"?"Enthaltene MwSt. im Wirtsanteil":"Zuzüglich 19 % MwSt. auf Wirtsanteil",36,y,footerSize-1,false,260);
+      txt(money(totals.hostVat),300,y,footerSize,true,100);
+      txt("Auszahlung",505,top-35,footerSize+2,true,120);txt(money(totals.payout),635,top-35,footerSize+4,true,160);
       rule(36,y-14,806,y-14);
-      txt("Auszahlung in Worten:",36,y-32,8,false,500);
+      txt("Auszahlung in Worten:",36,y-32,9*Math.min(pdfScale,1.2),false,500);
     }
     const signY=68;
-    if(!onlyCash){rule(60,signY,370,signY);txt("Wirt / Kunde",150,signY-15,8,false,150)}
+    if(!onlyCash){rule(60,signY,370,signY);txt("Wirt / Kunde",150,signY-15,9*Math.min(pdfScale,1.2),false,150)}
     rule(470,signY,780,signY);
-    txt("Aufstellunternehmen",565,signY-15,8,false,160);
+    txt("Aufstellunternehmen",565,signY-15,9*Math.min(pdfScale,1.2),false,160);
     const bytes=await doc.save();
     return new Blob([bytes],{type:"application/pdf"});
   }
@@ -505,10 +521,7 @@
   document.addEventListener("input",e=>{if(e.target.matches("input"))calculate()});
   document.addEventListener("change",e=>{if(e.target.matches("input"))calculate()});
   document.getElementById("saveBtn").addEventListener("click",saveForm);
-  document.getElementById("printBtn").addEventListener("click",()=>{
-    calculate();
-    document.body.classList.add("print-preview");
-    window.scrollTo(0,0);
+  function preparePdf(){
     readyPdf=null;
     const button=document.getElementById("sharePdfBtn");
     button.disabled=true;button.textContent="PDF wird vorbereitet …";
@@ -519,7 +532,14 @@
       document.getElementById("pdfMessage").textContent="PDF konnte nicht erstellt werden. Bitte die Druckansicht in Safari öffnen.";
       console.error(error);
     });
+  }
+  document.getElementById("printBtn").addEventListener("click",()=>{
+    calculate();
+    document.body.classList.add("print-preview");
+    window.scrollTo(0,0);
+    preparePdf();
   });
+  document.getElementById("pdfFontSize").addEventListener("change",preparePdf);
   document.getElementById("sharePdfBtn").addEventListener("click",openPdfShare);
   document.getElementById("tryPrintBtn").addEventListener("click",()=>window.print());
   if(navigator.standalone)document.getElementById("tryPrintBtn").hidden=true;
