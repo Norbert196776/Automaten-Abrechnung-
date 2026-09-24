@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#1769aa">
-  <title>Automaten-Abrechnung V14</title>
+  <title>Automaten-Abrechnung V15</title>
   <style>
     :root{--blue:#1769aa;--blue2:#e9f3fb;--bg:#f2f2f7;--card:#fff;--line:#d7d7dc;--text:#1c1c1e;--muted:#666;--danger:#b42318}
     *{box-sizing:border-box}
@@ -83,7 +83,7 @@
 <main>
   <header class="screen-view">
     <h1>Automaten-Abrechnung</h1>
-    <p class="note">Version 14 · drei Abrechnungsarten · Drucklayout Version 11</p>
+    <p class="note">Version 15 · drei Abrechnungsarten · PDF direkt aus der App</p>
   </header>
 
   <section class="card screen-view">
@@ -172,7 +172,7 @@
   <section class="card screen-only">
     <div class="actions">
       <button type="button" class="primary" id="saveBtn">Abrechnung speichern</button>
-      <button type="button" class="secondary" id="printBtn">Drucken / PDF</button>
+      <button type="button" class="secondary" id="printBtn">PDF teilen / drucken</button>
       <button type="button" class="danger" id="newBtn">Neue Abrechnung</button>
     </div>
     <p class="saved" id="savedMessage"></p>
@@ -334,9 +334,142 @@
   document.addEventListener("input",e=>{if(e.target.matches("input"))calculate()});
   document.addEventListener("change",e=>{if(e.target.matches("input"))calculate()});
   document.getElementById("saveBtn").addEventListener("click",saveForm);
-  document.getElementById("printBtn").addEventListener("click",()=>{
-    calculate();
-    requestAnimationFrame(()=>setTimeout(()=>window.print(),120));
+  // PDF ohne Netzwerk oder Browser-Druckdialog erzeugen: iOS-Home-Bildschirm-Apps
+  // unterstützen window.print() nicht zuverlässig.
+  function createPdf(){
+    const width=842, height=595, commands=[];
+    const x0=30;
+    function pdfNumber(n){return Number(n.toFixed(2))}
+    function pdfText(value){
+      const replacements={"€":128,"–":45,"—":45,"−":45,"’":39,"“":34,"”":34};
+      return Array.from(String(value??"")).map(ch=>{
+        const n=replacements[ch]??ch.charCodeAt(0);
+        return (n>=32&&n<=255?n:63).toString(16).padStart(2,"0");
+      }).join("");
+    }
+    function textAt(value,x,y,size=9,bold=false,maxWidth=0){
+      let s=String(value??"");
+      if(maxWidth){
+        const limit=Math.max(1,Math.floor(maxWidth/(size*.51)));
+        if(s.length>limit)s=s.slice(0,Math.max(0,limit-3))+"...";
+      }
+      commands.push(`BT /F${bold?2:1} ${size} Tf 1 0 0 1 ${pdfNumber(x)} ${pdfNumber(height-y)} Tm <${pdfText(s)}> Tj ET`);
+    }
+    function line(x1,y1,x2,y2){commands.push(`${pdfNumber(x1)} ${pdfNumber(height-y1)} m ${pdfNumber(x2)} ${pdfNumber(height-y2)} l S`)}
+    function box(x,y,w,h){commands.push(`${pdfNumber(x)} ${pdfNumber(height-y-h)} ${pdfNumber(w)} ${pdfNumber(h)} re S`)}
+    function field(label,value,x,y){textAt(label,x,y,8,true,104);textAt(value,x+105,y,9,false,245);line(x,y+5,x+360,y+5)}
+    const value=id=>document.getElementById(id).value.trim();
+    const mode=selectedMode();
+    textAt("Automaten-Abrechnung",x0,37,18,true);
+    textAt(`Nr. ${value("number")}`,620,37,12,true,190);
+    line(x0,44,812,44);
+    field("Wirt / Kunde",value("customer"),x0,66);
+    field("Heutiges Datum",formatDate(value("date")),430,66);
+    field("Straße",value("street"),x0,88);
+    field("Letzte Abrechnung",formatDate(value("lastDate")),430,88);
+    field("PLZ / Ort",`${value("zip")} ${value("city")}`.trim(),x0,110);
+    field("USt-ID Aufsteller",value("operatorTax"),430,110);
+    field("Steuer-/USt-ID",value("customerTax"),x0,132);
+    field("Abrechnungsart",mode==="inclusive"?"Inklusive MwSt.":mode==="exclusive"?"Exklusive MwSt.":"Ohne Kunde",430,132);
+    textAt("Geräteabrechnung",x0,160,11,true);
+    const columns=mode==="withoutCustomer"?
+      [{h:"Geldspielgerät",w:170,key:"name"},{h:"Kasseninhalt",w:145,key:"cash"},{h:"MwSt. Spieler",w:145,key:"playerVat"},{h:"Netto",w:145,key:"net"},{h:"Geräte-Nr.",w:177,key:"serial"}]:
+      [{h:"Geldspielgerät",w:105,key:"name"},{h:"Kasseninhalt",w:72,key:"cash"},{h:"MwSt. Spieler",w:72,key:"playerVat"},{h:"Netto",w:65,key:"net"},{h:"Vergn.-St.",w:75,key:"tax"},{h:"Gebühren",w:68,key:"fees"},{h:"Verbleib",w:72,key:"remaining"},{h:"Anteil",w:43,key:"percent"},{h:"Anteil Wirt",w:75,key:"share"},{h:"Geräte-Nr.",w:135,key:"serial"}];
+    let y=172, rows=[], totals={};
+    const sumKeys=["cash","playerVat","net","tax","fees","remaining","share"];
+    for(const key of sumKeys)totals[key]=0;
+    for(let i=0;i<DEVICE_COUNT;i++){
+      const r=calculateDevice(i);
+      if(r.cash===0)continue;
+      r.name=value(`name${i}`)||`Automat ${i+1}`;
+      r.serial=value(`serial${i}`);
+      rows.push(r);
+      for(const key of sumKeys)totals[key]=round10(totals[key]+r[key]);
+    }
+    function tableRow(cells,top,bold=false){
+      let x=x0;
+      for(let j=0;j<columns.length;j++){
+        const col=columns[j];
+        box(x,top,col.w,26);
+        textAt(cells[col.key],x+4,top+17,bold?8:7.5,bold,col.w-8);
+        x+=col.w;
+      }
+    }
+    tableRow(Object.fromEntries(columns.map(c=>[c.key,c.h])),y,true);
+    y+=26;
+    for(const r of rows){
+      const cells={...r};
+      for(const key of sumKeys)cells[key]=money(r[key]);
+      cells.percent=moneyFormatter.format(r.percent);
+      tableRow(cells,y);
+      y+=26;
+    }
+    const cells={name:"Zusammen",serial:"",percent:""};
+    for(const key of sumKeys)cells[key]=money(totals[key]);
+    tableRow(cells,y,true);
+    y+=38;
+    if(mode!=="withoutCustomer"){
+      const hostVat=rows.reduce((sum,r)=>round10(sum+r.hostVat),0);
+      const payout=rows.reduce((sum,r)=>round10(sum+r.payout),0);
+      textAt(`Verbleibt zur Abrechnung: ${money(totals.remaining)}`,x0,y,10,true);
+      textAt(`Anteil des Wirtes: ${money(totals.share)}`,x0,y+19,10);
+      textAt(`${mode==="inclusive"?"Enthaltene MwSt.":"Zuzüglich 19 % MwSt."}: ${money(hostVat)}`,x0,y+38,10);
+      box(565,y-13,247,66);
+      textAt("Auszahlung",575,y+9,10,true);
+      textAt(money(payout),575,y+36,16,true);
+      y+=76;
+      textAt("Auszahlung in Worten:",x0,y,9,true);
+      line(150,y+5,812,y+5);
+      y+=20;
+      textAt("Wir bestätigen die Richtigkeit der Abrechnung und den Empfang des angegebenen Betrages.",x0,y,8,false,782);
+      y+=22;
+    }
+    const signatureY=Math.max(y+32,465);
+    line(x0,signatureY,350,signatureY);
+    line(470,signatureY,812,signatureY);
+    textAt("Wirt / Kunde",x0,signatureY+15,8);
+    textAt("Aufstellunternehmen",470,signatureY+15,8);
+    const stream=commands.join("\n")+"\n";
+    const objects=[
+      "<< /Type /Catalog /Pages 2 0 R >>",
+      "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${width} ${height}] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>`,
+      "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
+      "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>",
+      `<< /Length ${stream.length} >>\nstream\n${stream}endstream`
+    ];
+    let pdf="%PDF-1.4\n",offsets=[0];
+    for(let i=0;i<objects.length;i++){
+      offsets.push(pdf.length);
+      pdf+=`${i+1} 0 obj\n${objects[i]}\nendobj\n`;
+    }
+    const start=pdf.length;
+    pdf+=`xref\n0 ${objects.length+1}\n0000000000 65535 f \n`;
+    for(const offset of offsets.slice(1))pdf+=`${String(offset).padStart(10,"0")} 00000 n \n`;
+    pdf+=`trailer\n<< /Size ${objects.length+1} /Root 1 0 R >>\nstartxref\n${start}\n%%EOF\n`;
+    return new Blob([Uint8Array.from(pdf,c=>c.charCodeAt(0))],{type:"application/pdf"});
+  }
+
+  document.getElementById("printBtn").addEventListener("click",async()=>{
+    const message=document.getElementById("savedMessage");
+    try{
+      calculate();
+      const pdf=createPdf();
+      const number=document.getElementById("number").value.trim().replace(/[^\p{L}\p{N}._-]+/gu,"-")||"neu";
+      const file=new File([pdf],`Abrechnung-${number}.pdf`,{type:"application/pdf"});
+      if(navigator.canShare?.({files:[file]})){
+        try{await navigator.share({files:[file],title:"Automaten-Abrechnung"});return}
+        catch(error){if(error.name==="AbortError")return}
+      }
+      const url=URL.createObjectURL(pdf);
+      const link=document.createElement("a");
+      link.href=url;link.download=file.name;link.click();
+      setTimeout(()=>URL.revokeObjectURL(url),60000);
+      message.textContent="PDF wurde erstellt. Öffne es in Dateien zum Drucken.";
+    }catch(error){
+      message.textContent="PDF konnte nicht geöffnet werden. Bitte öffne die App in Safari.";
+      console.error(error);
+    }
   });
   document.getElementById("newBtn").addEventListener("click",newForm);
   loadForm();
