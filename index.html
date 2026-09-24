@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#1769aa">
-  <title>Automaten-Abrechnung V15</title>
+  <title>Automaten-Abrechnung V16</title>
   <style>
     :root{--blue:#1769aa;--blue2:#e9f3fb;--bg:#f2f2f7;--card:#fff;--line:#d7d7dc;--text:#1c1c1e;--muted:#666;--danger:#b42318}
     *{box-sizing:border-box}
@@ -83,7 +83,7 @@
 <main>
   <header class="screen-view">
     <h1>Automaten-Abrechnung</h1>
-    <p class="note">Version 15 · drei Abrechnungsarten · PDF direkt aus der App</p>
+    <p class="note">Version 16 · drei Abrechnungsarten · lesbarer PDF-Ausdruck</p>
   </header>
 
   <section class="card screen-view">
@@ -357,10 +357,15 @@
     }
     function line(x1,y1,x2,y2){commands.push(`${pdfNumber(x1)} ${pdfNumber(height-y1)} m ${pdfNumber(x2)} ${pdfNumber(height-y2)} l S`)}
     function box(x,y,w,h){commands.push(`${pdfNumber(x)} ${pdfNumber(height-y-h)} ${pdfNumber(w)} ${pdfNumber(h)} re S`)}
-    function field(label,value,x,y){textAt(label,x,y,8,true,104);textAt(value,x+105,y,9,false,245);line(x,y+5,x+360,y+5)}
+    function field(label,value,x,y){
+      const large=selectedMode()==="withoutCustomer";
+      textAt(label,x,y,large?10:8,true,104);
+      textAt(value,x+105,y,large?11:9,false,245);
+      line(x,y+5,x+360,y+5);
+    }
     const value=id=>document.getElementById(id).value.trim();
     const mode=selectedMode();
-    textAt("Automaten-Abrechnung",x0,37,18,true);
+    textAt("Automaten-Abrechnung",x0,37,mode==="withoutCustomer"?21:18,true);
     textAt(`Nr. ${value("number")}`,620,37,12,true,190);
     line(x0,44,812,44);
     field("Wirt / Kunde",value("customer"),x0,66);
@@ -371,7 +376,7 @@
     field("USt-ID Aufsteller",value("operatorTax"),430,110);
     field("Steuer-/USt-ID",value("customerTax"),x0,132);
     field("Abrechnungsart",mode==="inclusive"?"Inklusive MwSt.":mode==="exclusive"?"Exklusive MwSt.":"Ohne Kunde",430,132);
-    textAt("Geräteabrechnung",x0,160,11,true);
+    textAt("Geräteabrechnung",x0,160,mode==="withoutCustomer"?13:11,true);
     const columns=mode==="withoutCustomer"?
       [{h:"Geldspielgerät",w:170,key:"name"},{h:"Kasseninhalt",w:145,key:"cash"},{h:"MwSt. Spieler",w:145,key:"playerVat"},{h:"Netto",w:145,key:"net"},{h:"Geräte-Nr.",w:177,key:"serial"}]:
       [{h:"Geldspielgerät",w:105,key:"name"},{h:"Kasseninhalt",w:72,key:"cash"},{h:"MwSt. Spieler",w:72,key:"playerVat"},{h:"Netto",w:65,key:"net"},{h:"Vergn.-St.",w:75,key:"tax"},{h:"Gebühren",w:68,key:"fees"},{h:"Verbleib",w:72,key:"remaining"},{h:"Anteil",w:43,key:"percent"},{h:"Anteil Wirt",w:75,key:"share"},{h:"Geräte-Nr.",w:135,key:"serial"}];
@@ -386,28 +391,29 @@
       rows.push(r);
       for(const key of sumKeys)totals[key]=round10(totals[key]+r[key]);
     }
+    const rowHeight=mode==="withoutCustomer"?44:26;
     function tableRow(cells,top,bold=false){
       let x=x0;
       for(let j=0;j<columns.length;j++){
         const col=columns[j];
-        box(x,top,col.w,26);
-        textAt(cells[col.key],x+4,top+17,bold?8:7.5,bold,col.w-8);
+        box(x,top,col.w,rowHeight);
+        textAt(cells[col.key],x+6,top+(mode==="withoutCustomer"?28:17),mode==="withoutCustomer"?(bold?11:10.5):(bold?8:7.5),bold,col.w-12);
         x+=col.w;
       }
     }
     tableRow(Object.fromEntries(columns.map(c=>[c.key,c.h])),y,true);
-    y+=26;
+    y+=rowHeight;
     for(const r of rows){
       const cells={...r};
       for(const key of sumKeys)cells[key]=money(r[key]);
       cells.percent=moneyFormatter.format(r.percent);
       tableRow(cells,y);
-      y+=26;
+      y+=rowHeight;
     }
     const cells={name:"Zusammen",serial:"",percent:""};
     for(const key of sumKeys)cells[key]=money(totals[key]);
     tableRow(cells,y,true);
-    y+=38;
+    y+=mode==="withoutCustomer"?rowHeight+14:38;
     if(mode!=="withoutCustomer"){
       const hostVat=rows.reduce((sum,r)=>round10(sum+r.hostVat),0);
       const payout=rows.reduce((sum,r)=>round10(sum+r.payout),0);
@@ -424,11 +430,11 @@
       textAt("Wir bestätigen die Richtigkeit der Abrechnung und den Empfang des angegebenen Betrages.",x0,y,8,false,782);
       y+=22;
     }
-    const signatureY=Math.max(y+32,465);
+    const signatureY=mode==="withoutCustomer"?Math.max(y+42,395):Math.max(y+32,465);
     line(x0,signatureY,350,signatureY);
     line(470,signatureY,812,signatureY);
-    textAt("Wirt / Kunde",x0,signatureY+15,8);
-    textAt("Aufstellunternehmen",470,signatureY+15,8);
+    textAt("Wirt / Kunde",x0,signatureY+15,mode==="withoutCustomer"?10:8);
+    textAt("Aufstellunternehmen",470,signatureY+15,mode==="withoutCustomer"?10:8);
     const stream=commands.join("\n")+"\n";
     const objects=[
       "<< /Type /Catalog /Pages 2 0 R >>",
